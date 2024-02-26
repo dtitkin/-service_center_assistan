@@ -102,7 +102,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+conf/.env
 .venv
 env/
 venv/
@@ -127,3 +127,22 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# my project ignore
+.cashe
+*.json
+*.zip
+setenv.sh
+.DS_Store
+*DS_Store
+*.cfg
+tmp*.py
+.vscode
+.vscode/
+.idea
+.gitlab-ci.yml
+requirements_tdv.txt
+
+ATT08575.env
+
+assets/photo_nomenclature

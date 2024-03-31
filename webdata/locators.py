@@ -7,7 +7,7 @@ from utils.app_type import Locator, Products_category
 class LoginPage_locators():
     LOGIN: Locator = (By.NAME, 'login')
     PASSWORD: Locator = (By.NAME, 'passwd')
-    OK_BUTTON: Locator = (By.CLASS_NAME, "jss99")
+    OK_BUTTON: Locator = (By.XPATH, '//button[@type="submit"]')
 
 
 class BackofficePage_locators():
@@ -21,6 +21,8 @@ class NewOrderPage_locators():
     OTHER_LINK: Locator = ((By.LINK_TEXT, "(купон) Другое"))
     SHOW_MORE_LINK: Locator = (By.LINK_TEXT, "Показать еще...")
     GOODS_LINE: Locator = (By.CLASS_NAME, "goods-item")
+    ALL_LINK: Locator = (By.XPATH, "//a[@href='#admin/shop/chgoods']")
+    CATEGORIES_ATRIBUTE = 'data-cat'
 
     @staticmethod
     def category_link(number_category: str) -> Locator:
@@ -28,9 +30,10 @@ class NewOrderPage_locators():
 
     POINT_CATEGORYS: Products_category = (
         "3", "5", "4", "6", "7", "8", "9", "12", "13", "10")
-    LEFTOVER_CATEGORYS: Products_category = ("17",)
+    STOCK_CATEGORYS: Products_category = ("17",)
     COUPON_CATEGORYS: Products_category = (
-        "18", "19", "20", "21", "22", "23", "24", "26", "27", "28", "25", "30")
+        "18", "19", "20", "21", "22", "23", "24", "26", "27", "28", "25", "30", "32")
+    OTHER_CATEGORYS: Products_category = ("cart", 'root', "1", "14", None)
 
 
 class WarehouseSelectionPage_locators():

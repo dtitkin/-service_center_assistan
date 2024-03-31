@@ -17,5 +17,11 @@ class _Setiings():
 
         self.login_uri: str = config['uri']['login_uri']
 
+        self.main_themes: str = config['front']['main_themes']
+        self.font_window: str = config['front']['font_window']
+        self.font_h1: str = config['front']['font_h1']
+        self.font_table_h: str = config['front']['font_table_h']
+        self.font_table_d: str = config['front']['font_table_d']
+
 
 settings = _Setiings()

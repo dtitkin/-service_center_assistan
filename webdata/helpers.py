@@ -42,7 +42,7 @@ def click_all_next_button(driver: webdriver, locator: Locator):
 def get_table_data(
     driver: webdriver,
     locator: Locator,
-    category: str,
+    category_name: str,
     not_zero_supplier: bool,
     not_zero_service_center: bool
 ) -> Table:
@@ -63,21 +63,23 @@ def get_table_data(
     for i, good in enumerate(goods, 0):
         row = GoodsTable()
 
+        row.category = category_name
+
         # try:
         columns = good.find_elements(By.CSS_SELECTOR, 'td')
-        row.category = good.get_attribute("data-id")
+        row.goods_number = good.get_attribute("data-id")
         # except StaleElementReferenceException:
         #     good = driver.find_elements(*locator)[i]
         #     columns = good.find_elements(By.CSS_SELECTOR, 'td')
         #     row.category = good.get_attribute("data-id")
         # первая колонка - коды, берем данные из строки
 
-        # вторая колонка
+        # забираем текст со второй по четвертую колонку
         txt_col_1, txt_col_2, txt_col_3, txt_col_4 = map(
             lambda _: _.text, columns[1:5])
 
+        # вторая колонка
         values = txt_col_1.split('\n')
-
         row.goods_name = values[0]
         row.quantity_supplier = Re.get_int_end(values[1])
         row.quantity_service_center = Re.get_int_end(values[2])

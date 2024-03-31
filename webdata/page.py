@@ -15,7 +15,7 @@ from .locators import (
 
 from .helpers import click_all_next_button, get_table_data
 
-from utils.task_service import TaskType
+from utils.enumirate import TaskType, OrderCategory
 
 
 def click():
@@ -118,8 +118,55 @@ class WarehouseSelectionPage(_BasePage):
 class NewOrderPage(_BasePage):
     other_block = _BaseElement(NewOrderPage_locators.OTHER_LINK)
 
-    def get_table_from_page(self, categories: Products_category) -> Table:
+    def get_table_all_categories(self) -> Table:
+        # ожидание прогрузки всего списка
+        _ = self.other_block
 
+        table = {
+            OrderCategory.POINT_PRODUCTS: [],
+            OrderCategory.COUPON_PRODUCTS: [],
+            OrderCategory.STOCK_PRODUCTS: []
+         }
+        categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
+        for elem_cat in categories:
+            data_cat = elem_cat.get_attribute(NewOrderPage_locators.CATEGORIES_ATRIBUTE)
+            if data_cat in NewOrderPage_locators.POINT_CATEGORYS:
+                stock_table = OrderCategory.POINT_PRODUCTS
+            elif data_cat in NewOrderPage_locators.COUPON_CATEGORYS:
+                stock_table = OrderCategory.COUPON_PRODUCTS
+            elif data_cat in NewOrderPage_locators.STOCK_CATEGORYS:
+                stock_table = OrderCategory.STOCK_PRODUCTS
+            else:
+                # TODO доделать возврать информации о том что есть не взятые категориии
+                continue
+
+            elem_cat.click()
+            category_name = elem_cat.text
+
+            have_error = click_all_next_button(self.driver, NewOrderPage_locators.SHOW_MORE_LINK)
+            if have_error["have_error"]:
+                # TODO
+                print(f" ошибка в категории: {elem_cat.text}")
+                print(have_error)
+
+            table[stock_table].extend(
+                 get_table_data(
+                    self.driver,
+                    NewOrderPage_locators.GOODS_LINE,
+                    category_name,
+                    True,
+                    False))
+        return table
+
+    def get_table_from_page(self, categories: Products_category) -> Table:
+        """получение таблицы с остатками по списку категории
+
+        Args:
+            categories (Products_category): список категорий
+
+        Returns:
+            Table: таблица с остатками
+        """
         # ожидание прогрузки всего списка
         _ = self.other_block
 
@@ -127,10 +174,12 @@ class NewOrderPage(_BasePage):
         for cat in categories:
             elem_cat = self.driver.find_element(*NewOrderPage_locators.category_link(cat))
             elem_cat.click()
+            category_name = elem_cat.text
 
             # нажимаем кнопку Показать еще ... столько раз сколько появится
             have_error = click_all_next_button(self.driver, NewOrderPage_locators.SHOW_MORE_LINK)
             if have_error["have_error"]:
+                # TODO
                 print(f" ошибка в категории: {elem_cat.text}")
                 print(have_error)
             # собираем в один список все строчки
@@ -138,23 +187,15 @@ class NewOrderPage(_BasePage):
                 get_table_data(
                     self.driver,
                     NewOrderPage_locators.GOODS_LINE,
-                    cat,
+                    category_name,
                     True,
                     False
                     ))
         return table
 
     def handle(self, request: list[TaskType]):
-        if TaskType.AVIABLE_POINT_PRODUCTS in request:
-            self.result_all_page.aviable_point_products = (
-                self.get_table_from_page(NewOrderPage_locators.POINT_CATEGORYS))
-
-        elif TaskType.AVIABLE_COUPON_PRODUCTS in request:
-            self.result_all_page.aviable_point_products = (
-                self.get_table_from_page(NewOrderPage_locators.COUPON_CATEGORYS))
-
-        elif TaskType.AVIABLE_LEFTOVERS_PRODUCTS in request:
-            self.result_all_page.aviable_point_products = (
-                self.get_table_from_page(NewOrderPage_locators.LEFTOVER_CATEGORYS))
+        if TaskType.AVIABLE_PRODUCTS in request:
+            self.result_all_page.aviable_products = (
+                self.get_table_all_categories())
 
         return super().handle(request)

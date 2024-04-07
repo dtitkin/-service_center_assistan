@@ -23,5 +23,13 @@ class _Setiings():
         self.font_table_h: str = config['front']['font_table_h']
         self.font_table_d: str = config['front']['font_table_d']
 
+        self.alternating_row_color: str = config['front']['alternating_row_color']
+        self.selected_row_colors: str = config['front']['selected_row_colors']
+        self.order_row_colors: str = config['front']['order_row_colors']
+
+        self.size_progresbar = 25
+
+        self.debug: bool = True if config['debug']['debug'] == 'True' else False
+
 
 settings = _Setiings()

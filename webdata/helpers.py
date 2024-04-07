@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from utils.app_type import Decimal, GoodsTable, Locator, Table
+from utils.app_type import Decimal, GoodsTable, Locator, Table, DataTable
 from utils.config import settings
 
 
@@ -43,6 +43,7 @@ def get_table_data(
     driver: webdriver,
     locator: Locator,
     category_name: str,
+    category_number: str,
     not_zero_supplier: bool,
     not_zero_service_center: bool
 ) -> Table:
@@ -80,6 +81,11 @@ def get_table_data(
 
         # вторая колонка
         values = txt_col_1.split('\n')
+        # TODO доделать обработку ошибки
+        if len(values) < 3:
+            if settings.debug:
+                print("ОШИБКА ЗДЕСЬ", category_name, i, columns)
+
         row.goods_name = values[0]
         row.quantity_supplier = Re.get_int_end(values[1])
         row.quantity_service_center = Re.get_int_end(values[2])
@@ -93,6 +99,8 @@ def get_table_data(
         # пятая колонка
         row.balls = Re.get_decimal_start(txt_col_4)
 
+        row.category_number = category_number
+
         if ((not_zero_supplier and row.quantity_supplier > 0)
                 or (not_zero_service_center and row.quantity_service_center > 0)):
             table.append(row)
@@ -100,9 +108,24 @@ def get_table_data(
     return table
 
 
+def set_table_data(driver: webdriver,
+                   locator: Locator,
+                   order_rows: DataTable) -> Table:
+    """ Возвращает таблицу с данными по которые были установленны в заказ
+
+    Args:
+        driver (webdriver): _description_
+        locator (Locator): _description_
+        order_rows (DataTable): _description_
+
+    Returns:
+        Table: _description_
+    """
+
+
 class Re():
     _re_int_end_digit = r'-?\d+$'
-    _re_decim_start_digit = r'(^\d+)|(^\d+.d+)'
+    _re_decim_start_digit = r'(^\d+\.\d+)|(^\d+)'
 
     @staticmethod
     def _re_find_number(source: str, pattern: str, number_function: Callable) -> str:
@@ -117,5 +140,5 @@ class Re():
         return cls._re_find_number(source, cls._re_int_end_digit, int)
 
     @classmethod
-    def get_decimal_start(cls, source: str) -> int:
+    def get_decimal_start(cls, source: str) -> Decimal:
         return cls._re_find_number(source, cls._re_decim_start_digit, Decimal)

@@ -31,7 +31,8 @@ def start_app():
 
     while True:
         event, values = window.read()
-        print(event, "values:", values)
+        if settings.debug:
+            print(event, "values:", values)
         if event == sg.WIN_CLOSED:
             break
         handler_order.handle(window, event, values)

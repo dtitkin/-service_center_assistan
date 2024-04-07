@@ -109,9 +109,14 @@ def get_table_data(
 
 
 def set_table_data(driver: webdriver,
-                   locator: Locator,
+                   all_goods_locator: Locator,
+                   line_goods:  Callable[[str], Locator],
+                   input_order,
                    order_rows: DataTable) -> Table:
-    """ Возвращает таблицу с данными по которые были установленны в заказ
+
+    """ По товарам одной кагории
+        заполняет таблицу заказа на сайт
+        возвращает таблицу с данными по которые были установленны в заказ
 
     Args:
         driver (webdriver): _description_
@@ -121,6 +126,39 @@ def set_table_data(driver: webdriver,
     Returns:
         Table: _description_
     """
+
+    table = []
+    wait = WebDriverWait(driver, timeout=settings.until_wait)
+
+    # дождемся прогрузки страницы с товарами
+    do_it = True
+    while do_it:
+        try:
+            goods = wait.until(EC.visibility_of_all_elements_located(all_goods_locator))
+            do_it = False
+        except TimeoutException:
+            do_it = True
+
+
+    # Заполним значения по каждой строкке с товарам
+    # если остаток на сайте сейчас меньше чем тот котороый мы заказываем
+    # то ставим остаток который на сайте
+    for good_row in order_rows:
+        row = GoodsTable()
+        # TODO переделать ображешие по индексу в списке на человеческое
+        product_code = good_row[1]
+
+        line_product = driver.find_element(*line_goods(product_code))
+        columns = line_product.find_elements(By.CSS_SELECTOR, 'td')
+
+        # из второй колонки получаем остатки
+        values =  columns[1].text.split('\n')
+        quantity_service_center = Re.get_int_end(values[2])
+
+        to_order = good_row[7] if  quantity_service_center >= good_row[7] else quantity_service_center
+
+
+
 
 
 class Re():

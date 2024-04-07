@@ -24,7 +24,8 @@ from utils.config import settings
 def click():
     return True
 
-
+# TODO Нужно абстрактные классы вынести в helpers или ???
+# так как там нужны эти типы данных
 class _BasePage():
     result_all_page: PageResult = PageResult()
 
@@ -123,6 +124,7 @@ class WarehouseSelectionPage(_BasePage):
 
 class NewOrderPage(_BasePage):
     other_block = _BaseElement(NewOrderPage_locators.OTHER_LINK)
+    input_order = _BaseElement(NewOrderPage_locators.INPUT_ORDER)
 
     def get_table_all_categories(self) -> Table:
         # ожидание прогрузки всего списка
@@ -164,7 +166,7 @@ class NewOrderPage(_BasePage):
             table[stock_table].extend(
                  get_table_data(
                     self.driver,
-                    NewOrderPage_locators.GOODS_LINE,
+                    NewOrderPage_locators.ALL_GOODS_LINE,
                     category_name,
                     data_cat,
                     True,

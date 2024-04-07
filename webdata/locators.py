@@ -20,13 +20,18 @@ class BackofficePage_locators():
 class NewOrderPage_locators():
     OTHER_LINK: Locator = ((By.LINK_TEXT, "(купон) Другое"))
     SHOW_MORE_LINK: Locator = (By.LINK_TEXT, "Показать еще...")
-    GOODS_LINE: Locator = (By.CLASS_NAME, "goods-item")
+    ALL_GOODS_LINE: Locator = (By.CLASS_NAME, "goods-item")
     ALL_LINK: Locator = (By.XPATH, "//a[@href='#admin/shop/chgoods']")
+    INPUT_ORDER: Locator = (By.TAG_NAME, "input")
     CATEGORIES_ATRIBUTE = 'data-cat'
 
     @staticmethod
     def category_link(number_category: str) -> Locator:
         return (By.XPATH, f"//a[@data-cat='{number_category}']")
+
+    @staticmethod
+    def product_line(product_code: str) -> Locator:
+        return (By.XPATH, f"//tr[@class='goods-item' and @data-id={product_code}']")
 
     POINT_CATEGORYS: Products_category = (
         "3", "5", "4", "6", "7", "8", "9", "12", "13", "10")

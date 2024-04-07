@@ -103,6 +103,7 @@ celerybeat.pid
 
 # Environments
 conf/.env
+conf/*.ini
 .venv
 env/
 venv/
@@ -141,8 +142,4 @@ tmp*.py
 .vscode/
 .idea
 .gitlab-ci.yml
-requirements_tdv.txt
 
-ATT08575.env
-
-assets/photo_nomenclature

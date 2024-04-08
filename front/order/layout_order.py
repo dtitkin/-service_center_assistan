@@ -125,6 +125,7 @@ def _make_table():
         auto_size_columns=True,
         col_widths=(16, 6, 50, 5, 5, 5, 6, 6),
         cols_justification=('l', 'l', 'l', 'r', 'r', 'r', 'r', 'r'),
+        row_height=settings.row_height_table,
         # pad=(4, 8),
         num_rows=30,
         display_row_numbers=True,

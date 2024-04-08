@@ -4,7 +4,7 @@ from selenium import webdriver
 
 from utils.config import settings
 from utils.app_enum import TaskType
-from utils.app_type import Decimal
+from utils.app_type import Decimal, GoodsTable
 
 from webdata.page import (
     LoginPage,
@@ -38,8 +38,8 @@ def get_stock(thread_queue: queue.Queue):
         TaskType.AVIABLE_PRODUCTS])
 
     # для фронта нужен список списков
-    for k, v in result.aviable_products.items():
-        result.aviable_products[k] = [row.aslist() for row in v]
+    # for k, v in result.aviable_products.items():
+    #    result.aviable_products[k] = [row.aslist() for row in v]
 
     thread_queue.put(('DATA', result))
     thread_queue.put(('END', 'END'))
@@ -57,8 +57,8 @@ class SummaryOrder():
         self.sum_order_product = 0
         self.balls_product = 0
 
-    def summary_order(self, row: list[int | str | Decimal]):
+    def summary_order(self, row: GoodsTable):
         self.count_scu += 1
-        self.count_thing += row[7]
-        self.sum_order_product += row[7] * row[4]
-        self.balls_product += row[7] * row[5]
+        self.count_thing += row.order
+        self.sum_order_product += row.order * row.price_service_center
+        self.balls_product += row.order * row.balls

@@ -22,6 +22,7 @@ class _Setiings():
         self.font_h1: str = config['front']['font_h1']
         self.font_table_h: str = config['front']['font_table_h']
         self.font_table_d: str = config['front']['font_table_d']
+        self.row_height_table: int = int(config['front']['row_height_table'])
 
         self.alternating_row_color: str = config['front']['alternating_row_color']
         self.selected_row_colors: str = config['front']['selected_row_colors']

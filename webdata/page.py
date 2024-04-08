@@ -1,13 +1,9 @@
-import queue
 
 from utils.app_type import (
-    PageResult,
     BackofficeData,
-    Table,
-    DataTable,
-    Locator,
-    Decimal,
-    webdriver)
+    Tables_by_OrderCategory,
+    ProductsTable,
+    Decimal)
 
 from .locators import (
     LoginPage_locators,
@@ -15,68 +11,19 @@ from .locators import (
     NewOrderPage_locators,
     WarehouseSelectionPage_locators)
 
-from .helpers import click_all_next_button, get_table_data
+from .helpers import (
+    click_all_next_button,
+    get_table_data,
+    set_table_data,
+    _BasePage,
+    _BaseElement,
+    _BaseButton,
+    click,
+    _ReturnTable
+    )
 
-from utils.app_enum import TaskType, OrderCategory
+from utils.app_enum import TaskType
 from utils.config import settings
-
-
-def click():
-    return True
-
-# TODO Нужно абстрактные классы вынести в helpers или ???
-# так как там нужны эти типы данных
-class _BasePage():
-    result_all_page: PageResult = PageResult()
-
-    def __init__(self, driver:  webdriver,
-                 thread_queue: queue.Queue | None = None,
-                 login: str = "",
-                 password: str = "",
-                 order_table: DataTable | None = None
-                 ):
-        self.driver = driver
-        self.thread_queue = thread_queue
-        self._next_handler = None
-        self.login = login
-        self.password = password
-        self.order_table = order_table
-
-    def set_next(self, next_hendler):
-        self._next_handler = next_hendler
-        return next_hendler
-
-    def handle(self, request: list[TaskType]) -> PageResult:
-        if self._next_handler:
-            return self._next_handler.handle(request)
-
-        return self.result_all_page
-
-
-class _BaseElement():
-    def __init__(self, locator: Locator, name_attribite=None):
-        self.locator = locator
-        self.name_attribite = name_attribite
-
-    def __set__(self, obj, value):
-        obj.driver.find_element(*self.locator).send_keys(value)
-
-    def __get__(self, obj, owner):
-        if not self.name_attribite:
-            return obj.driver.find_element(*self.locator).text
-        else:
-            return (
-                obj.driver.find_element(*self.locator)
-                .get_attribute(self.name_attribite))
-
-
-class _BaseButton():
-    def __init__(self, locator: Locator):
-        self.locator = locator
-
-    def __set__(self, obj, value):
-        button = obj.driver.find_element(*self.locator)
-        button.click()
 
 
 class LoginPage(_BasePage):
@@ -124,17 +71,12 @@ class WarehouseSelectionPage(_BasePage):
 
 class NewOrderPage(_BasePage):
     other_block = _BaseElement(NewOrderPage_locators.OTHER_LINK)
-    input_order = _BaseElement(NewOrderPage_locators.INPUT_ORDER)
 
-    def get_table_all_categories(self) -> Table:
+    def get_table_all_categories(self) -> Tables_by_OrderCategory:
         # ожидание прогрузки всего списка
         _ = self.other_block
 
-        table = {
-            OrderCategory.POINT_PRODUCTS: [],
-            OrderCategory.COUPON_PRODUCTS: [],
-            OrderCategory.STOCK_PRODUCTS: []
-         }
+        table = _ReturnTable()
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
         for i, elem_cat in enumerate(categories, 1):
@@ -143,14 +85,7 @@ class NewOrderPage(_BasePage):
                 self.thread_queue.put(('COUNTER', (i, quantiti_category)))
 
             data_cat = elem_cat.get_attribute(NewOrderPage_locators.CATEGORIES_ATRIBUTE)
-            if data_cat in NewOrderPage_locators.POINT_CATEGORYS:
-                stock_table = OrderCategory.POINT_PRODUCTS
-            elif data_cat in NewOrderPage_locators.COUPON_CATEGORYS:
-                stock_table = OrderCategory.COUPON_PRODUCTS
-            elif data_cat in NewOrderPage_locators.STOCK_CATEGORYS:
-                stock_table = OrderCategory.STOCK_PRODUCTS
-            else:
-                # TODO доделать возврать информации о том что есть не взятые категориии
+            if not table.check_category(data_cat):
                 continue
 
             elem_cat.click()
@@ -163,24 +98,26 @@ class NewOrderPage(_BasePage):
                     print(f" ошибка в категории: {elem_cat.text}")
                     print(have_error)
 
-            table[stock_table].extend(
-                 get_table_data(
+            table.add_table(
+                data_cat,
+                get_table_data(
                     self.driver,
                     NewOrderPage_locators.ALL_GOODS_LINE,
                     category_name,
                     data_cat,
                     True,
                     False))
-            if settings.debug:
-                if len(table[stock_table]) >= 10:
-                    break
-        return table
+            if table.check_debug():
+                break
 
-    def set_order_table(self):
+        return table.table
+
+    def set_order_table(self) -> Tables_by_OrderCategory:
         _ = self.other_block
 
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
+        table = _ReturnTable()
 
         # переводим список списков в словарь номер категории: строки таблицы товаров
         # TODO высокая связанность интерфейса и бизнес логики. Нужно сменить номера
@@ -203,9 +140,19 @@ class NewOrderPage(_BasePage):
                     print(f" ошибка в категории: {elem_cat.text}")
                     print(have_error)
 
-            order_rows = map_order_row.get(data_cat)
+            order_rows: ProductsTable = map_order_row.get(data_cat)
             if not order_rows:
                 continue
+
+            table.add_table(
+                data_cat,
+                set_table_data(
+                    self.driver,
+                    NewOrderPage_locators.ALL_GOODS_LINE,
+                    NewOrderPage_locators.INPUT_ORDER,
+                    order_rows)
+            )
+        return table.table
 
     def handle(self, request: list[TaskType]):
         if TaskType.AVIABLE_PRODUCTS in request:

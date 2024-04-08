@@ -12,10 +12,12 @@ BackofficeData = namedtuple('BackofficeData',
                              'paid_inventory',
                              'orders_maid'])
 
-type Table = Mapping[OrderCategory, Sequence[GoodsTable]]
+type ProductsTable = Sequence[GoodsTable]
+type Tables_by_OrderCategory = Mapping[OrderCategory, ProductsTable]
+type ProductsTableFront = Sequence[Sequence[int | str | Decimal]]
 type Locator = tuple[By, str]
 type Products_category = tuple[str]
-type DataTable = Sequence[Sequence[int | str | Decimal]]
+# type DataTable = Sequence[Sequence[int | str | Decimal]]
 
 
 @dataclass
@@ -30,7 +32,7 @@ class GoodsTable():
     balls: Decimal = Decimal(0)
     order: int = 0
     category_number: str = ""
-    set_order: Decimal = Decimal(0)
+    set_order: int = 0
 
     def aslist(self):
         return [
@@ -49,4 +51,4 @@ class GoodsTable():
 @dataclass
 class PageResult():
     back_ofice_data: BackofficeData | None = None
-    aviable_products: DataTable | None = None
+    aviable_products: Tables_by_OrderCategory | None = None

@@ -6,6 +6,11 @@ import queue
 from middle.stock_logic import get_stock, SummaryOrder
 from utils.config import settings
 from utils.app_enum import OrderCategory
+
+from utils.app_type import (
+    ProductsTable,
+    GoodsTable)
+
 from .layout_order import window_input_number
 
 
@@ -14,6 +19,8 @@ THREAD_EXIT = '-GET_STOCK_END-'
 THREAD_INFO = '-GET_STOCK_INFO-'
 TREAD_DATA_EXIT = '-GET_STOCK_DATA_END-'
 CATEGORIES = {cat.value: cat for cat in OrderCategory}
+
+has_open_window = False
 
 
 def handle(window: sg.Window, event, value):
@@ -58,23 +65,29 @@ def handle(window: sg.Window, event, value):
 
     elif event == '-SELECT_CATEGORY-':
         category = CATEGORIES[value[event]]
+
         if window['-SELECT_CATEGORY-'].metadata:
-            window['-TABLE-'].update(values=window['-SELECT_CATEGORY-'].metadata[category][:-2])
+            products_tables: ProductsTable = window['-SELECT_CATEGORY-'].metadata[category]
+            window['-TABLE-'].update(values=[x.aslist() for x in products_tables])
 
     elif event[0] == '-TABLE-':
         category = CATEGORIES[value['-SELECT_CATEGORY-']]
         if event[1] == '+CLICKED+' and (event[2][0] is not None and event[2][0] > -1):
-            # кликнули по строке
-            if window['-SELECT_CATEGORY-'].metadata:
-                number_data_row = event[2][0]
-                row_data = window['-SELECT_CATEGORY-'].metadata[category][number_data_row]
-                name_product = row_data[2]
-                max_number = row_data[6]
-                input_val = window_input_number(name_product, max_number)
-                if input_val != row_data[7]:
-                    row_data[7] = input_val
-                    window['-TABLE-'].update(
-                        values=window['-SELECT_CATEGORY-'].metadata[category],)
+            global has_open_window
+            if not has_open_window:
+                has_open_window = True
+                # кликнули по строке
+                if window['-SELECT_CATEGORY-'].metadata:
+                    number_data_row = event[2][0]
+                    row_data: GoodsTable = window['-SELECT_CATEGORY-'].metadata[category][number_data_row]
+                    name_product = row_data.goods_name
+                    max_number = row_data.quantity_supplier
+                    input_val = window_input_number(name_product, max_number)
+                    has_open_window = False
+                    if input_val != row_data.order:
+                        row_data.order = input_val
+                        window.write_event_value('-SELECT_CATEGORY-', value['-SELECT_CATEGORY-'])
+
     elif event == '-SEND_ORDER-':
         visible_correct = not window['-SEND_ORDER-'].metadata
         window['-SEND_ORDER-'].metadata = visible_correct
@@ -104,8 +117,9 @@ def _set_row_colors_summary(category: OrderCategory, window: sg.Window):
     update_row_color = []
     if not window['-SELECT_CATEGORY-'].metadata:
         return
-    for number_data_row, row in enumerate(window['-SELECT_CATEGORY-'].metadata[category]):
-        if row[7] != 0:
+    products_tables: ProductsTable = window['-SELECT_CATEGORY-'].metadata[category]
+    for number_data_row, row in enumerate(products_tables):
+        if row.order != 0:
             update_row_color.append(((number_data_row, settings.order_row_colors)))
             summary.summary_order(row)
 

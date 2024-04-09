@@ -1,7 +1,8 @@
 
 from selenium.webdriver.common.by import By
 
-from utils.app_type import Locator, Products_category
+type Locator = tuple[By, str]
+type Products_category = tuple[str]
 
 
 class LoginPage_locators():

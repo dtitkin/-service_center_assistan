@@ -19,7 +19,6 @@ from .helpers import (
     _BaseElement,
     _BaseButton,
     click,
-    _ReturnTable
     )
 
 from utils.app_enum import TaskType
@@ -76,7 +75,7 @@ class NewOrderPage(_BasePage):
         # ожидание прогрузки всего списка
         _ = self.other_block
 
-        table = _ReturnTable()
+        table = Tables_by_OrderCategory()
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
         for i, elem_cat in enumerate(categories, 1):
@@ -110,14 +109,14 @@ class NewOrderPage(_BasePage):
             if table.check_debug():
                 break
 
-        return table.table
+        return table
 
     def set_order_table(self) -> Tables_by_OrderCategory:
         _ = self.other_block
 
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
-        table = _ReturnTable()
+        table = Tables_by_OrderCategory()
 
         # переводим список списков в словарь номер категории: строки таблицы товаров
         # TODO высокая связанность интерфейса и бизнес логики. Нужно сменить номера
@@ -152,13 +151,12 @@ class NewOrderPage(_BasePage):
                     NewOrderPage_locators.INPUT_ORDER,
                     order_rows)
             )
-        return table.table
+        return table
 
     def handle(self, request: list[TaskType]):
         if TaskType.AVIABLE_PRODUCTS in request:
-            self.result_all_page.aviable_products = (
-                self.get_table_all_categories())
+            self.result_all_page.aviable_products = self.get_table_all_categories()
         elif TaskType.ORDER_PRODUCTS in request:
-            self.set_order_table()
+             self.result_all_page.ordered_products = self.set_order_table()
 
         return super().handle(request)

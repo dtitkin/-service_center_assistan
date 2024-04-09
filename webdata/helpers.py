@@ -15,17 +15,12 @@ import queue
 
 from utils.app_type import (
     PageResult,
-    Tables_by_OrderCategory,
     ProductsTable,
     Locator,
     Decimal,
     GoodsTable)
 
-from utils.app_enum import TaskType, OrderCategory
-
-
-from .locators import (
-    NewOrderPage_locators)
+from utils.app_enum import TaskType
 
 
 def click():
@@ -83,41 +78,6 @@ class _BaseButton():
     def __set__(self, obj, value):
         button = obj.driver.find_element(*self.locator)
         button.click()
-
-
-class _ReturnTable():
-
-    def __init__(self):
-        self.table: Tables_by_OrderCategory = {
-            OrderCategory.POINT_PRODUCTS: [],
-            OrderCategory.COUPON_PRODUCTS: [],
-            OrderCategory.STOCK_PRODUCTS: []
-            }
-        self.stock_table = None
-
-    def add_table(self, data_cat: str, data_table: ProductsTable):
-        self.check_category(data_cat)
-
-        self.table[self.stock_table].extend(data_table)
-
-    def check_debug(self):
-        if self.stock_table and settings.debug:
-            if len(self.table[self.stock_table]) >= 10:
-                return True
-            else:
-                return False
-
-    def check_category(self, data_cat: str) -> bool:
-        if data_cat in NewOrderPage_locators.POINT_CATEGORYS:
-            self.stock_table = OrderCategory.POINT_PRODUCTS
-        elif data_cat in NewOrderPage_locators.COUPON_CATEGORYS:
-            self.stock_table = OrderCategory.COUPON_PRODUCTS
-        elif data_cat in NewOrderPage_locators.STOCK_CATEGORYS:
-            self.stock_table = OrderCategory.STOCK_PRODUCTS
-        else:
-            # TODO доделать возврать информации о том что есть не взятые категориии
-            return False
-        return True
 
 
 def click_all_next_button(driver: webdriver, locator: Locator):

@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 
-from utils.app_enum import OrderCategory
+from utils.app_enum import OrderCategory, ButtonOrderState
 
 from utils.config import settings
 from utils.app_type import Decimal
@@ -61,7 +61,11 @@ def layout():
         ]
 
     button_section = [[sg.pin(sg.Button("<< Корректировать", size=(18, 1), visible=False, key='-CORRECT_ORDER-')),
-                       sg.Button("Заказать >>",  size=(18, 1), key='-SEND_ORDER-', metadata=False)]]
+                       sg.Button(
+                           "Заказать >>",
+                           size=(18, 1),
+                           key='-SEND_ORDER-',
+                           metadata=ButtonOrderState.get_button_order_metadata())]]
 
     address_section = [[
         sg.Column([

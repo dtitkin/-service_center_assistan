@@ -3,9 +3,9 @@ import PySimpleGUI as sg
 from datetime import datetime
 import queue
 
-from middle.stock_logic import get_stock, SummaryOrder
+from middle.stock_logic import get_stock,  send_order, SummaryOrder
 from utils.config import settings
-from utils.app_enum import OrderCategory
+from utils.app_enum import OrderCategory, ButtonOrderState
 
 from utils.app_type import (
     ProductsTable,
@@ -89,10 +89,36 @@ def handle(window: sg.Window, event, value):
                         window.write_event_value('-SELECT_CATEGORY-', value['-SELECT_CATEGORY-'])
 
     elif event == '-SEND_ORDER-':
-        visible_correct = not window['-SEND_ORDER-'].metadata
-        window['-SEND_ORDER-'].metadata = visible_correct
-        window['-CORRECT_ORDER-'].update(visible=visible_correct)
-        window['-ADRRES_SECTION-'].update(visible=visible_correct)
+        state_after_click: ButtonOrderState = next(window['-SEND_ORDER-'].metadata[0])
+        window['-SEND_ORDER-'].metadata[1] = state_after_click
+        if state_after_click == ButtonOrderState.EDIT_ORDER:
+            window['-CORRECT_ORDER-'].update(visible=False)
+            window['-ADRRES_SECTION-'].update(visible=False)
+            window['-SEND_ORDER-'].update(text="Заказать >>")
+
+        elif state_after_click == ButtonOrderState.INPUT_ADRESS:
+            # показываю таблицу с товарами только из заказа
+            # блокируем выбор категории
+            window['-CORRECT_ORDER-'].update(visible=True)
+            window['-ADRRES_SECTION-'].update(visible=True)
+
+            window['-SELECT_CATEGORY-'].update(disabled=True)
+
+
+        elif state_button == ButtonOrderState.SAVE_ORDER:
+            window['-CORRECT_ORDER-'].update(visible=True)
+            window['-ADRRES_SECTION-'].update(visible=True)
+            window['-SEND_ORDER-'].update(text="Отправить >>")
+
+
+
+
+
+
+
+
+        window['-CORRECT_ORDER-'].update(visible=True if state_button == 1 else False)
+        window['-ADRRES_SECTION-'].update(visible=True if state_button in (1,2) else False)
 
     if event[0] == '-TABLE-' or event == '-SELECT_CATEGORY-':
         _set_row_colors_summary(category, window)

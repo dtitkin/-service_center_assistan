@@ -3,7 +3,7 @@ import PySimpleGUI as sg
 from utils.app_enum import OrderCategory, ButtonOrderState
 
 from utils.config import settings
-from utils.app_type import Decimal
+
 
 from decimal import InvalidOperation
 
@@ -70,33 +70,40 @@ def layout():
     address_section = [[
         sg.Column([
             [
-                sg.Push(), sg.Text("ФИО", font=settings.font_window, justification='l'),
+                sg.Push(), sg.Text("ФИО", font=settings.font_window, justification='l', key='-L_FIO-'),
                 sg.Input(size=(40, 1), key='-IN_FIO-')
                 ],
             [
-                sg.Push(), sg.Text("Телефон", font=settings.font_window, justification='l'),
+                sg.Push(), sg.Text("Телефон", font=settings.font_window, justification='l', key='-L_PHONE-'),
                 sg.Input(size=(40, 1), key='-IN_PHONE-')
                 ],
             [
-                sg.Push(), sg.Text("Адрес", font=settings.font_window, justification='l'),
+                sg.Push(), sg.Text("Адрес", font=settings.font_window, justification='l', key='-L_ADDRES-'),
                 sg.Input(size=(40, 1), key='-IN_ADDRES-')
                 ],
             [
-                sg.Push(), sg.Text("Почтовый индекцс", font=settings.font_window, justification='l'),
+                sg.Push(), sg.Text(
+                    "Почтовый индекс", font=settings.font_window, justification='l', key='-L_POST_INDEX-'),
                 sg.Input(size=(40, 1), key='-IN_POST_INDEX-')
                 ],
             [
-                sg.Push(), sg.Text("Примечание", font=settings.font_window, justification='l'),
+                sg.Push(), sg.Text("Примечание", font=settings.font_window, justification='l', key='-L_NOTE-'),
                 sg.Input(size=(40, 1), key='-IN_NOTE-')
                 ],
             ]),
         ]]
 
+    order_info_section = [[sg.Multiline(default_text="", size=(30, 5), key='-INFO_ORDER-')]]
+
     main_content = [
         [_make_table()],
         [sg.Column(result_text, key='-C3-', element_justification='l', expand_x=True),
          sg.Column(button_section, key='-C4-', vertical_alignment='top', element_justification='r', expand_x=True)],
-        [sg.pin(sg.Column(address_section, visible=False, element_justification='r', key='-ADRRES_SECTION-'))]
+        [sg.pin(sg.Column(address_section, visible=False, element_justification='r', key='-ADRRES_SECTION-')),
+         sg.pin(
+             sg.Column(
+                 order_info_section,
+                 visible=False, vertical_alignment='top', element_justification='r', key='-INFO_ORDER_SECTION-'))]
         ]
     fotter = []
 
@@ -117,7 +124,8 @@ def _make_table():
             "Складская цена",
             "Баллы",
             "Остаток",
-            "Заказ"]
+            "Заказть",
+            "Отправлено"]
 
     return sg.Table(
         values=[[]],
@@ -128,10 +136,10 @@ def _make_table():
         max_col_width=150,
         auto_size_columns=True,
         col_widths=(16, 6, 50, 5, 5, 5, 6, 6),
-        cols_justification=('l', 'l', 'l', 'r', 'r', 'r', 'r', 'r'),
+        cols_justification=('l', 'l', 'l', 'r', 'r', 'r', 'r', 'r', 'r'),
         row_height=settings.row_height_table,
         # pad=(4, 8),
-        num_rows=30,
+        num_rows=20,
         display_row_numbers=True,
         alternating_row_color=settings.alternating_row_color,
         selected_row_colors=settings.selected_row_colors,
@@ -142,7 +150,7 @@ def _make_table():
         key='-TABLE-')
 
 
-def window_input_number(name_product: str, max_number: Decimal) -> Decimal:
+def window_input_number(name_product: str, max_number: int) -> int:
     # TODO передтать чило введенное в заказ
     input_num = 0
     error_mesage = ""
@@ -152,12 +160,13 @@ def window_input_number(name_product: str, max_number: Decimal) -> Decimal:
             # default_text="0",
             modal=True,
             no_titlebar=True,
+            keep_on_top=True,
             font=settings.font_window,)
 
         try:
             if input_txt:
                 input_txt = input_txt.strip().replace(",", ".")
-                input_num = Decimal(input_txt)
+                input_num = int(input_txt)
                 if input_num > max_number:
                     input_num = max_number
                 break

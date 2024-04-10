@@ -1,6 +1,6 @@
 import queue
-
 from selenium import webdriver
+from time import sleep
 
 from utils.config import settings
 from utils.app_enum import TaskType
@@ -10,7 +10,8 @@ from webdata.page import (
     LoginPage,
     BackofficePage,
     WarehouseSelectionPage,
-    NewOrderPage)
+    NewOrderPage,
+    FillAdressPage)
 
 
 def get_stock(thread_queue: queue.Queue):
@@ -57,18 +58,21 @@ def send_order(thread_queue: queue.Queue, order_table: ProductsTable):
         login=settings.login,
         password=settings.password)
 
-    back_ofice_page = BackofficePage(driver, thread_queue=thread_queue)
-    werehouse_select_page = WarehouseSelectionPage(driver, thread_queue=thread_queue)
+    back_ofice_page = BackofficePage(driver)
+    werehouse_select_page = WarehouseSelectionPage(driver)
     new_order_page = NewOrderPage(driver, thread_queue=thread_queue, order_table=order_table)
+    fill_addres_page = FillAdressPage(driver)
 
     (login_page.set_next(back_ofice_page)
      .set_next(werehouse_select_page)
-     .set_next(new_order_page))
+     .set_next(new_order_page)
+     .set_next(fill_addres_page))
 
     result = login_page.handle([TaskType.ORDER_PRODUCTS])
 
     thread_queue.put(('ORDER', result))
     thread_queue.put(('END', 'END'))
+    sleep(360)
 
 
 class SummaryOrder():

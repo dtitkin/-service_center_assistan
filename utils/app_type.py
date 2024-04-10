@@ -1,5 +1,6 @@
 from collections import namedtuple
 from collections.abc import Mapping, Sequence  # noqa
+from typing import Literal
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -52,7 +53,7 @@ class GoodsTable():
 class Tables_by_OrderCategory():
 
     def __init__(self):
-        self.table: Tables_by_OrderCategory = {
+        self.table: Mapping[OrderCategory, ProductsTable] = {
             OrderCategory.POINT_PRODUCTS: [],
             OrderCategory.COUPON_PRODUCTS: [],
             OrderCategory.STOCK_PRODUCTS: []
@@ -82,6 +83,37 @@ class Tables_by_OrderCategory():
             # TODO доделать возврать информации о том что есть не взятые категориии
             return False
         return True
+
+    def get_category_table(self, category: str) -> ProductsTable:
+        order_category = OrderCategory.category_by_value(category)
+        if not order_category:
+            return None
+        return self.table[order_category]
+
+    def get_front_table(self,
+                        category: str,
+                        scope: Literal['all', 'order', 'no_order'] = 'all') -> ProductsTableFront | None:
+        order_category = OrderCategory.category_by_value(category)
+        if not order_category:
+            return None
+        match scope:
+            case 'all':
+                return [x.aslist() for x in self.table[order_category]]
+            case 'order':
+                return [x.aslist() for x in self.table[order_category] if x.order > 0]
+            case 'no_order':
+                return [x.aslist() for x in self.table[order_category] if x.order == 0]
+            case _:
+                return None
+
+    def get_row_form_table(self, category: str, num_row: int) -> GoodsTable | None:
+        order_category = OrderCategory.category_by_value(category)
+        if not order_category:
+            return None
+        if num_row < 0 or num_row >= len(self.table[order_category]):
+            return None
+
+        return self.table[order_category][num_row]
 
 
 @dataclass

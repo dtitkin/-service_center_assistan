@@ -1,3 +1,4 @@
+from time import sleep
 import re
 from collections.abc import Callable
 
@@ -55,12 +56,17 @@ class _BasePage():
 
 
 class _BaseElement():
-    def __init__(self, locator: Locator, name_attribite=None):
+    def __init__(self, locator: Locator, name_attribite=None, delete_all_in_inpit=False):
         self.locator = locator
         self.name_attribite = name_attribite
+        self.delete_all_in_inpit = delete_all_in_inpit
 
     def __set__(self, obj, value):
-        obj.driver.find_element(*self.locator).send_keys(value)
+        elem = obj.driver.find_element(*self.locator)
+        if self.delete_all_in_inpit:
+            now_val = elem.get_attribute('value')
+            value = '\b' * len(now_val) + value
+        elem.send_keys(value)
 
     def __get__(self, obj, owner):
         if not self.name_attribite:
@@ -76,11 +82,13 @@ class _BaseButton():
         self.locator = locator
 
     def __set__(self, obj, value):
-        button = obj.driver.find_element(*self.locator)
+        # button = obj.driver.find_element(*self.locator)
+        wait = WebDriverWait(obj.driver, timeout=settings.until_wait*5)
+        button = wait.until(EC.element_to_be_clickable(self.locator))
         button.click()
 
 
-def click_all_next_button(driver: webdriver, locator: Locator):
+def click_all_next_button(driver: webdriver, locator: Locator, all_next=True):
     """ находит элемент на экране и щелкает на него пока он не исчезнеет
         Нужно для кнопки Показать Еще...
     """
@@ -95,12 +103,18 @@ def click_all_next_button(driver: webdriver, locator: Locator):
                               EC.visibility_of_element_located(locator)))
             elem.click()
             count_press += 1
+            # если нужно щелкнуть только один раз
+            if not all_next:
+                do_it = False
         except TimeoutException:
             do_it = False
-        except Exception:
+        except Exception as ex:
+            do_it = False
             # print(elem)
             # print("!!!!!!!!!!!!!")
             # print(elem.is_displayed(), elem.is_enabled())
+            # TODO доделать вывод ошибок
+            print(ex)
             have_error["have_error"] = True
             have_error["erros_on_click"].append(count_press+1)
         have_error["max_clicks"] = count_press
@@ -178,9 +192,11 @@ def get_table_data(
 
 def set_table_data(driver: webdriver,
                    all_goods_locator: Locator,
-                   input_order: Locator,
+                   input_order_locator: Locator,
                    line_goods:  Callable[[str], Locator],
-                   order_table: ProductsTable) -> ProductsTable:
+                   order_table: ProductsTable,
+                   summary_web_elem: _BaseElement
+                   ) -> ProductsTable:
 
     """ По товарам одной кагории
         заполняет таблицу заказа на сайт
@@ -211,18 +227,22 @@ def set_table_data(driver: webdriver,
     # если остаток на сайте сейчас меньше чем тот котороый мы заказываем
     # то ставим остаток который на сайте
     for good_row in order_table:
-
+        print("-------", line_goods(good_row.goods_number))
         line_product = driver.find_element(*line_goods(good_row.goods_number))
         columns = line_product.find_elements(By.CSS_SELECTOR, 'td')
 
         # из второй колонки получаем остатки
         values = columns[1].text.split('\n')
-        quantity_service_center = Re.get_int_end(values[2])
+        quantity_supplier = Re.get_int_end(values[1])
 
-        to_order = good_row.order if quantity_service_center >= good_row.order else quantity_service_center
+        to_order = good_row.order if quantity_supplier >= good_row.order else quantity_supplier
 
-        input_order = columns[5].find_element(*input_order)
-        input_order.send_keys(to_order)
+        input_order = columns[5].find_element(*input_order_locator)
+        input_order.send_keys(f"\b{to_order}")
+        sleep(2)
+        print(summary_web_elem)
+
+        good_row.quantity_supplier = quantity_supplier
         good_row.set_order = to_order
         table.append(good_row)
     return table

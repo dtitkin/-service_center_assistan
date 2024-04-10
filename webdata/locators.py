@@ -24,6 +24,8 @@ class NewOrderPage_locators():
     ALL_GOODS_LINE: Locator = (By.CLASS_NAME, "goods-item")
     ALL_LINK: Locator = (By.XPATH, "//a[@href='#admin/shop/chgoods']")
     INPUT_ORDER: Locator = (By.TAG_NAME, "input")
+    NEXT_BUTTON: Locator = (By.XPATH, "//input[@type='button' and @value='Далее']")
+    SUMMARY_TEXT: Locator = (By.CLASS_NAME, "info-count")
     CATEGORIES_ATRIBUTE = 'data-cat'
 
     @staticmethod
@@ -32,7 +34,7 @@ class NewOrderPage_locators():
 
     @staticmethod
     def product_line(product_code: str) -> Locator:
-        return (By.XPATH, f"//tr[@class='goods-item' and @data-id={product_code}']")
+        return (By.XPATH, f"//tr[@class='goods-item' and @data-id='{product_code}']")
 
     POINT_CATEGORYS: Products_category = (
         "3", "5", "4", "6", "7", "8", "9", "12", "13", "10")
@@ -43,4 +45,13 @@ class NewOrderPage_locators():
 
 
 class WarehouseSelectionPage_locators():
-    NEXT__BUTTON = (By.CLASS_NAME, "btn-success")
+    NEXT_BUTTON = (By.CLASS_NAME, "btn-success")
+
+
+class FillAdressPage_locators():
+    FIO: Locator = (By.NAME, 'fullname')
+    PHONE: Locator = (By.NAME, 'phone')
+    ADDRES: Locator = (By.NAME, 'address')
+    POST_INDEX: Locator = (By.NAME, 'mail_index')
+    NOTE: Locator = (By.NAME, 'note')
+    NEXT_BUTTON: Locator = (By.XPATH, "//input[@type='submit' and @value='Готово']")

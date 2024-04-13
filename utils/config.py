@@ -1,13 +1,13 @@
 from pathlib import Path
 import configparser
 
-_conf_folder = Path(__file__).parent.parent / "conf"
+conf_folder = Path(__file__).parent.parent / "conf"
 
 
 class _Setiings():
     def __init__(self):
         config = configparser.ConfigParser()
-        config.read(Path(_conf_folder, 'settings.ini'))
+        config.read(Path(conf_folder, 'settings.ini'))
 
         self.login: str = config['authorization']['login']
         self.password: str = config['authorization']['password']
@@ -22,6 +22,7 @@ class _Setiings():
         self.font_h1: str = config['front']['font_h1']
         self.font_table_h: str = config['front']['font_table_h']
         self.font_table_d: str = config['front']['font_table_d']
+        self.row_height_table: int = int(config['front']['row_height_table'])
 
         self.alternating_row_color: str = config['front']['alternating_row_color']
         self.selected_row_colors: str = config['front']['selected_row_colors']

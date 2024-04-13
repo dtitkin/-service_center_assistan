@@ -1,81 +1,32 @@
-import queue
 
 from utils.app_type import (
-    PageResult,
     BackofficeData,
-    Table,
-    DataTable,
-    Locator,
-    Decimal,
-    webdriver)
+    Tables_by_OrderCategory,
+    ProductsTable,
+    Decimal)
+
+from utils.addres_data import Addres
 
 from .locators import (
     LoginPage_locators,
     BackofficePage_locators,
     NewOrderPage_locators,
-    WarehouseSelectionPage_locators)
+    WarehouseSelectionPage_locators,
+    FillAdressPage_locators)
 
-from .helpers import click_all_next_button, get_table_data
 
-from utils.app_enum import TaskType, OrderCategory
+from .helpers import (
+    click_all_next_button,
+    get_table_data,
+    set_table_data,
+    _BasePage,
+    _BaseElement,
+    _BaseButton,
+    click,
+    )
+
+from utils.app_enum import TaskType
 from utils.config import settings
-
-
-def click():
-    return True
-
-
-class _BasePage():
-    result_all_page: PageResult = PageResult()
-
-    def __init__(self, driver:  webdriver,
-                 thread_queue: queue.Queue | None = None,
-                 login: str = "",
-                 password: str = "",
-                 order_table: DataTable | None = None
-                 ):
-        self.driver = driver
-        self.thread_queue = thread_queue
-        self._next_handler = None
-        self.login = login
-        self.password = password
-        self.order_table = order_table
-
-    def set_next(self, next_hendler):
-        self._next_handler = next_hendler
-        return next_hendler
-
-    def handle(self, request: list[TaskType]) -> PageResult:
-        if self._next_handler:
-            return self._next_handler.handle(request)
-
-        return self.result_all_page
-
-
-class _BaseElement():
-    def __init__(self, locator: Locator, name_attribite=None):
-        self.locator = locator
-        self.name_attribite = name_attribite
-
-    def __set__(self, obj, value):
-        obj.driver.find_element(*self.locator).send_keys(value)
-
-    def __get__(self, obj, owner):
-        if not self.name_attribite:
-            return obj.driver.find_element(*self.locator).text
-        else:
-            return (
-                obj.driver.find_element(*self.locator)
-                .get_attribute(self.name_attribite))
-
-
-class _BaseButton():
-    def __init__(self, locator: Locator):
-        self.locator = locator
-
-    def __set__(self, obj, value):
-        button = obj.driver.find_element(*self.locator)
-        button.click()
 
 
 class LoginPage(_BasePage):
@@ -114,7 +65,7 @@ class BackofficePage(_BasePage):
 
 
 class WarehouseSelectionPage(_BasePage):
-    next_button = _BaseButton(WarehouseSelectionPage_locators.NEXT__BUTTON)
+    next_button = _BaseButton(WarehouseSelectionPage_locators.NEXT_BUTTON)
 
     def handle(self, request: list[TaskType]):
         self.next_button = click()
@@ -123,68 +74,64 @@ class WarehouseSelectionPage(_BasePage):
 
 class NewOrderPage(_BasePage):
     other_block = _BaseElement(NewOrderPage_locators.OTHER_LINK)
+    summary_txt = _BaseElement(NewOrderPage_locators.SUMMARY_TEXT)
+    next_button = _BaseButton(WarehouseSelectionPage_locators.NEXT_BUTTON)
 
-    def get_table_all_categories(self) -> Table:
+    def get_table_all_categories(self) -> Tables_by_OrderCategory:
         # ожидание прогрузки всего списка
         _ = self.other_block
 
-        table = {
-            OrderCategory.POINT_PRODUCTS: [],
-            OrderCategory.COUPON_PRODUCTS: [],
-            OrderCategory.STOCK_PRODUCTS: []
-         }
+        table = Tables_by_OrderCategory()
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
         for i, elem_cat in enumerate(categories, 1):
-
             if self.thread_queue:
                 self.thread_queue.put(('COUNTER', (i, quantiti_category)))
 
             data_cat = elem_cat.get_attribute(NewOrderPage_locators.CATEGORIES_ATRIBUTE)
-            if data_cat in NewOrderPage_locators.POINT_CATEGORYS:
-                stock_table = OrderCategory.POINT_PRODUCTS
-            elif data_cat in NewOrderPage_locators.COUPON_CATEGORYS:
-                stock_table = OrderCategory.COUPON_PRODUCTS
-            elif data_cat in NewOrderPage_locators.STOCK_CATEGORYS:
-                stock_table = OrderCategory.STOCK_PRODUCTS
-            else:
-                # TODO доделать возврать информации о том что есть не взятые категориии
+            if not table.check_category(data_cat):
                 continue
 
             elem_cat.click()
             category_name = elem_cat.text
 
             have_error = click_all_next_button(self.driver, NewOrderPage_locators.SHOW_MORE_LINK)
+            if settings.debug:
+                print(category_name, have_error)
+
             if have_error["have_error"]:
                 # TODO
                 if settings.debug:
                     print(f" ошибка в категории: {elem_cat.text}")
                     print(have_error)
 
-            table[stock_table].extend(
-                 get_table_data(
+            table.add_table(
+                data_cat,
+                get_table_data(
                     self.driver,
-                    NewOrderPage_locators.GOODS_LINE,
+                    NewOrderPage_locators.ALL_GOODS_LINE,
                     category_name,
                     data_cat,
                     True,
                     False))
-            if settings.debug:
-                if len(table[stock_table]) >= 10:
-                    break
+            if table.check_debug():
+                break
+
         return table
 
-    def set_order_table(self):
+    def set_order_table(self) -> Tables_by_OrderCategory:
         _ = self.other_block
 
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
 
+        table = Tables_by_OrderCategory()
+
         # переводим список списков в словарь номер категории: строки таблицы товаров
         # TODO высокая связанность интерфейса и бизнес логики. Нужно сменить номера
         map_order_row = {key: item
-                         for key in [x[8] for x in self.order_table if x[7] > 0]
-                         for item in [[y for y in self.order_table if y[7] > 0 and y[8] == key]]}
+                         for key in [x.category_number for x in self.order_table if x.order > 0]
+                         for item in [[y for y in self.order_table if y.order > 0 and y.category_number == key]]}
 
         for i, elem_cat in enumerate(categories, 1):
 
@@ -192,6 +139,12 @@ class NewOrderPage(_BasePage):
                 self.thread_queue.put(('COUNTER', (i, quantiti_category)))
 
             data_cat = elem_cat.get_attribute(NewOrderPage_locators.CATEGORIES_ATRIBUTE)
+            if not table.check_category(data_cat):
+                continue
+            order_rows: ProductsTable = map_order_row.get(data_cat)
+            if not order_rows:
+                continue
+
             elem_cat.click()
 
             have_error = click_all_next_button(self.driver, NewOrderPage_locators.SHOW_MORE_LINK)
@@ -201,15 +154,47 @@ class NewOrderPage(_BasePage):
                     print(f" ошибка в категории: {elem_cat.text}")
                     print(have_error)
 
-            order_rows = map_order_row.get(data_cat)
-            if not order_rows:
-                continue
+            table.add_table(
+                data_cat,
+                set_table_data(
+                    self.driver,
+                    NewOrderPage_locators.ALL_GOODS_LINE,
+                    NewOrderPage_locators.INPUT_ORDER,
+                    NewOrderPage_locators.product_line,
+                    order_rows,
+                    self.summary_txt)
+            )
+        return table
 
     def handle(self, request: list[TaskType]):
         if TaskType.AVIABLE_PRODUCTS in request:
-            self.result_all_page.aviable_products = (
-                self.get_table_all_categories())
+            self.result_all_page.aviable_products = self.get_table_all_categories()
         elif TaskType.ORDER_PRODUCTS in request:
-            self.set_order_table()
+            self.result_all_page.ordered_products = self.set_order_table()
+            self.next_button = click()
+
+        return super().handle(request)
+
+
+class FillAdressPage(_BasePage):
+    fio = _BaseElement(FillAdressPage_locators.FIO, delete_all_in_inpit=True)
+    phone = _BaseElement(FillAdressPage_locators.PHONE, delete_all_in_inpit=True)
+    address = _BaseElement(FillAdressPage_locators.ADDRES, delete_all_in_inpit=True)
+    post_index = _BaseElement(FillAdressPage_locators.POST_INDEX, delete_all_in_inpit=True)
+    note = _BaseElement(FillAdressPage_locators.NOTE, delete_all_in_inpit=True)
+    next_button = _BaseButton(FillAdressPage_locators.NEXT_BUTTON)
+
+    def fill_adress(self):
+        addres = Addres()
+        self.fio = addres.fio
+        self.phone = addres.phone
+        self.address = addres.addres
+        self.post_index = addres.post_index
+        self.note = addres.note
+
+    def handle(self, request: list[TaskType]):
+        if TaskType.ORDER_PRODUCTS in request:
+            self.fill_adress()
+            # self.next_button = click()
 
         return super().handle(request)

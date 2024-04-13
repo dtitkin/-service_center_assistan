@@ -88,37 +88,30 @@ class _BaseButton():
         button.click()
 
 
-def click_all_next_button(driver: webdriver, locator: Locator, all_next=True):
+def click_all_next_button(driver: webdriver, locator: Locator):
     """ находит элемент на экране и щелкает на него пока он не исчезнеет
         Нужно для кнопки Показать Еще...
     """
-    wait = WebDriverWait(driver, timeout=settings.until_wait)
+    wait = WebDriverWait(driver, timeout=settings.until_wait*2)
     do_it = True
     have_error = {"have_error": False, "erros_on_click": [], "max_clicks": 0}
     count_press = 0
     while do_it:
         try:
-            # elem = wait.until(EC.visibility_of_element_located(locator))
-            elem = wait.until(EC.any_of(EC.element_to_be_clickable(locator),
-                              EC.visibility_of_element_located(locator)))
-            elem.click()
+            elem = wait.until(EC.all_of(EC.element_to_be_clickable(locator),
+                                        EC.visibility_of_element_located(locator)))
+
+            elem[0].click()
             count_press += 1
-            # если нужно щелкнуть только один раз
-            if not all_next:
-                do_it = False
         except TimeoutException:
             do_it = False
-        except Exception as ex:
-            do_it = False
-            # print(elem)
-            # print("!!!!!!!!!!!!!")
-            # print(elem.is_displayed(), elem.is_enabled())
+        except Exception:
             # TODO доделать вывод ошибок
-            print(ex)
             have_error["have_error"] = True
             have_error["erros_on_click"].append(count_press+1)
         have_error["max_clicks"] = count_press
-        return have_error
+
+    return have_error
 
 
 def get_table_data(
@@ -131,31 +124,34 @@ def get_table_data(
 ) -> ProductsTable:
 
     table = []
-    wait = WebDriverWait(driver, timeout=settings.until_wait)
 
     do_it = True
     while do_it:
         try:
+            wait = WebDriverWait(driver, timeout=settings.until_wait*5)
             goods = wait.until(EC.visibility_of_all_elements_located(locator))
-            do_it = False
+
+            columns = goods[0].find_elements(By.CSS_SELECTOR, 'td')
+            values = columns[1].text.split('\n')
+            if len(values) < 3:
+                do_it = True
+            else:
+                do_it = False
+
         except TimeoutException:
             do_it = True
 
     # goods = driver.find_elements(*locator)
 
+    if len(values) < 3:
+        do_it = True
     for i, good in enumerate(goods, 0):
         row = GoodsTable()
 
         row.category = category_name
 
-        # try:
         columns = good.find_elements(By.CSS_SELECTOR, 'td')
         row.goods_number = good.get_attribute("data-id")
-        # except StaleElementReferenceException:
-        #     good = driver.find_elements(*locator)[i]
-        #     columns = good.find_elements(By.CSS_SELECTOR, 'td')
-        #     row.category = good.get_attribute("data-id")
-        # первая колонка - коды, берем данные из строки
 
         # забираем текст со второй по четвертую колонку
         txt_col_1, txt_col_2, txt_col_3, txt_col_4 = map(
@@ -165,8 +161,8 @@ def get_table_data(
         values = txt_col_1.split('\n')
         # TODO доделать обработку ошибки
         if len(values) < 3:
-            if settings.debug:
-                print("ОШИБКА ЗДЕСЬ", category_name, i, columns)
+            # if settings.debug:
+            print("ОШИБКА ЗДЕСЬ", category_name, i, columns)
 
         row.goods_name = values[0]
         row.quantity_supplier = Re.get_int_end(values[1])
@@ -226,8 +222,8 @@ def set_table_data(driver: webdriver,
     # Заполним значения по каждой строкке с товарам
     # если остаток на сайте сейчас меньше чем тот котороый мы заказываем
     # то ставим остаток который на сайте
+    sleep(3)
     for good_row in order_table:
-        print("-------", line_goods(good_row.goods_number))
         line_product = driver.find_element(*line_goods(good_row.goods_number))
         columns = line_product.find_elements(By.CSS_SELECTOR, 'td')
 
@@ -240,8 +236,6 @@ def set_table_data(driver: webdriver,
         input_order = columns[5].find_element(*input_order_locator)
         input_order.send_keys(f"\b{to_order}")
         sleep(2)
-        print(summary_web_elem)
-
         good_row.quantity_supplier = quantity_supplier
         good_row.set_order = to_order
         table.append(good_row)

@@ -85,7 +85,6 @@ class NewOrderPage(_BasePage):
         categories = self.driver.find_elements(*NewOrderPage_locators.ALL_LINK)
         quantiti_category = len(categories)
         for i, elem_cat in enumerate(categories, 1):
-
             if self.thread_queue:
                 self.thread_queue.put(('COUNTER', (i, quantiti_category)))
 
@@ -97,6 +96,9 @@ class NewOrderPage(_BasePage):
             category_name = elem_cat.text
 
             have_error = click_all_next_button(self.driver, NewOrderPage_locators.SHOW_MORE_LINK)
+            if settings.debug:
+                print(category_name, have_error)
+
             if have_error["have_error"]:
                 # TODO
                 if settings.debug:

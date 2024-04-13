@@ -85,7 +85,12 @@ def handle(window: sg.Window, event, value):
 
     elif event[0] == '-TABLE-':
         category = value['-SELECT_CATEGORY-']
-        if event[1] == '+CLICKED+' and (event[2][0] is not None and event[2][0] > -1):
+        state_button = window['-SEND_ORDER-'].metadata[1]
+
+        normal_state = state_button == ButtonOrderState.EDIT_ORDER
+
+        if (event[1] == '+CLICKED+' and event[2][0] is not None and event[2][0] > -1 and normal_state):
+
             global has_open_window
             if not has_open_window:
                 has_open_window = True
@@ -103,22 +108,16 @@ def handle(window: sg.Window, event, value):
                         row_data.order = input_val
                         window.write_event_value('-SELECT_CATEGORY-', value['-SELECT_CATEGORY-'])
 
+    elif event == '-CORRECT_ORDER-':
+        window['-SEND_ORDER-'].metadata = ButtonOrderState.get_button_order_metadata()
+        _set_edit_order_window(window, value)
+
     elif event == '-SEND_ORDER-':
-
         category = value['-SELECT_CATEGORY-']
-
         state_after_click: ButtonOrderState = next(window['-SEND_ORDER-'].metadata[0])
         window['-SEND_ORDER-'].metadata[1] = state_after_click
-
         if state_after_click == ButtonOrderState.EDIT_ORDER:
-            window['-CORRECT_ORDER-'].update(visible=False)
-            window['-ADRRES_SECTION-'].update(visible=False)
-            window['-INFO_ORDER_SECTION-'].update(visible=False)
-            window['-INFO_ORDER-'].update(value="")
-            window['-SELECT_CATEGORY-'].update(readonly=False)
-            window['-SEND_ORDER-'].update(text="Заказать >>")
-            window.write_event_value('-SELECT_CATEGORY-', value['-SELECT_CATEGORY-'])
-            window['-PROGRES-'].update(visible=False, current_count=0)
+            _set_edit_order_window(window, value)
 
         elif state_after_click == ButtonOrderState.INPUT_ADRESS:
             # показываю таблицу с товарами только из заказа
@@ -236,3 +235,14 @@ def _restore_addres_value(window):
     window['-IN_ADDRES-'].update(value=addres.addres)
     window['-IN_POST_INDEX-'].update(value=addres.post_index)
     window['-IN_NOTE-'].update(value=addres.note)
+
+
+def _set_edit_order_window(window, value):
+    window['-CORRECT_ORDER-'].update(visible=False)
+    window['-ADRRES_SECTION-'].update(visible=False)
+    window['-INFO_ORDER_SECTION-'].update(visible=False)
+    window['-INFO_ORDER-'].update(value="")
+    window['-SELECT_CATEGORY-'].update(readonly=False)
+    window['-SEND_ORDER-'].update(text="Заказать >>")
+    window.write_event_value('-SELECT_CATEGORY-', value['-SELECT_CATEGORY-'])
+    window['-PROGRES-'].update(visible=False, current_count=0)
